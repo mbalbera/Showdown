@@ -13,8 +13,11 @@ class PlayerCard: # nothing should ever be of class PlayerCard, & all cards shou
     def getPointValue(self):
         return self._PointValue
     
-    def getPosition(self):
-        return self._Position
+    def getPosition1(self):
+        return self._Position1
+    
+    def getPosition2(self):
+        return self._Position2
     
     def getSpeed(self):
         return self._Speed
@@ -100,18 +103,26 @@ class BatterCard(PlayerCard):
     def getBatterOutcomes(self):
         return self._BatterOutcomes
     
+    def getFielding(self):
+        if self.getCurrentPosition() == self.getPosition1():
+            return self._Fielding1
+        else: #self.getCurrentPosition() == self.getPosition2(), I hope!
+            return self._Fielding2
+        # prepared a bit for the eventuality that this function will increase in complexity to account for players playing multiple positions
+        # will have to handle (for ex): 2B/SS playing SS, OF playing CF or LF, IF playing 1B or SS, anyone playing 1B @ fielding = -1
+    
     #__INITIALIZER__
     # Awards to be added later
     # Secondary position to be added later
-    def __init__(self,nameFirst,nameLast,PointValue,Position,OnBase,Speed,OutSO,OutGB,OutFB,BB,single,single_plus,double,triple,homerun,Fielding = -1):
+    def __init__(self,nameFirst,nameLast,PointValue,Position1,OnBase,Speed,OutSO,OutGB,OutFB,BB,single,single_plus,double,triple,homerun,Fielding1 = -1):
         #TODO: add error messages to each assertion
         assert isinstance(nameFirst, str)
         assert isinstance(nameLast, str)
         # the below line currently allows Position to be only 'LF', which I'll accept for now to mean LF/RF.
-        assert Position == "C" or Position == "1B" or Position == "2B" or Position == "3B" or Position == "SS" or Position == "LF/RF" or Position == "CF" or Position == "OF" or Position == "IF" or Position == "2B/SS" or Position == "2B/3B" or Position == "-" or Position == "LFRF" or Position == "DH" or Position == "LF", "Position was passed "+str(Position)+", which caused a fail."
-        assert isinstance(Fielding, int)
-        assert Fielding >= -1
-        assert Fielding <= 12
+        assert Position1 == "C" or Position1 == "1B" or Position1 == "2B" or Position1 == "3B" or Position1 == "SS" or Position1 == "LF/RF" or Position1 == "CF" or Position1 == "OF" or Position1 == "IF" or Position1 == "2B/SS" or Position1 == "2B/3B" or Position1 == "-" or Position1 == "LFRF" or Position1 == "DH" or Position1 == "LF", "Position1 was passed "+str(Position1)+", which caused a fail."
+        assert isinstance(Fielding1, int)
+        assert Fielding1 >= -1
+        assert Fielding1 <= 12
         assert isinstance(Speed,int)
         assert Speed >= 8
         assert Speed <= 28
@@ -127,8 +138,8 @@ class BatterCard(PlayerCard):
         
         self.setName(nameFirst,nameLast)
         self._PointValue = PointValue
-        self._Position = Position
-        self._Fielding = Fielding
+        self._Position1 = Position1
+        self._Fielding1 = Fielding1
         self._OnBase = OnBase
         self._Speed = Speed
         

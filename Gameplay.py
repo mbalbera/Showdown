@@ -126,7 +126,8 @@ class Gameplay:
         self._ThirdBase = player
         
     def dieRoll(self):
-        return random.randint(1,20)
+        return int(input())
+        #return random.randint(1,20)
     
     def attemptDoublePlay(self,runner):
         speed = runner.getSpeed()
@@ -223,6 +224,7 @@ class Gameplay:
             self.scoreRun(self.getSecondBase())
             self.setThirdBase(self.getFirstBase())
             self.setSecondBase(theBatter)
+            self.setFirstBase(None)
             self.nextBatter()
         # if "single","single_plus","double" then self.attemptTagUp() and (self.getSecondBase != None or self.getThirdBase() != None), as per above
         elif atBatResult == "triple":
@@ -230,12 +232,17 @@ class Gameplay:
             self.scoreRun(self.getSecondBase())
             self.scoreRun(self.getFirstBase())
             self.setThirdBase(theBatter)
+            self.setSecondBase(None)
+            self.setFirstBase(None)
             self.nextBatter()
         elif atBatResult == "homerun":
             self.scoreRun(self.getThirdBase())
             self.scoreRun(self.getSecondBase())
             self.scoreRun(self.getFirstBase())
             self.scoreRun(theBatter)
+            self.setThirdBase(None)
+            self.setSecondBase(None)
+            self.setFirstBase(None)
             self.nextBatter()
         
         # on to the next batter, once every possible outcome is calculated!

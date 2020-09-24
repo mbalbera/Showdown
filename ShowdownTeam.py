@@ -25,18 +25,17 @@ class Lineup(list):
     def getBattingOrder(self):
         return self._BattingOrder
     
-    def getCatcherArm(self): # doesn't work as of now, still figuring out how the lineup knows who is playing where, but concept is correct
-        return self.catcher.Fielding
+    def getCatcherArm(self): 
+        return self.getPositionPlayer("C").getFielding()
     
-    def getInfieldArm(self): # doesn't work as of now, still figuring out how the lineup knows who is playing where, but concept is correct
-        return sum(self.firstbase.Fielding,self.secondbase.Fielding,self.thirdbase.Fielding,self.shortstop.Fielding)
+    def getInfieldArm(self): 
+        return sum(self.getPositionPlayer("1B").getFielding(),self.getPositionPlayer("2B").getFielding(),self.getPositionPlayer("3B").getFielding(),self.getPositionPlayer("SSgetPositionPlayer").getFielding())
     
-    def getOutfieldArm(): # doesn't work as of now, still figuring out how the lineup knows who is playing where, but concept is correct
-        return sum(self.leftfield.Fielding,self.centerfield.Fielding,self.rightfield.Fielding)
+    def getOutfieldArm(): 
+        return sum(self.getPositionPlayer("LF").getFielding(),self.getPositionPlayer("CF").getFielding(),self.getPositionPlayer("RF").getFielding()) # getFielding handles pulling fielding value for the appropriate position
     
     def setPitcher(self,thePitcher):
         assert isinstance(thePitcher,PlayerCard.PitcherCard) or thePitcher == None
-        
         if self._Pitcher == None:
             self._Pitcher = thePitcher
         else: # self.getPitcher() != None:
@@ -53,7 +52,17 @@ class Lineup(list):
         assert spot <= 9
         return self.getBattingOrder()[spot-1] # so that batter's number in order follows 1-9 convention while call to list is indexed correctly, e.g. starting with 0
         
+    def setPosition(self,position,batter):
+        assert position in ["C","1B","2B","3B","SS","LF","CF","RF","DH","P"]
+        assert isinstance(batter,PlayerCard.PlayerCard)
+        self._Positions.setdefault(position,batter)
+        
+    def getPositionPlayer(self,position): # output of type PlayerCard.PlayerCard
+        assert position in ["C","1B","2B","3B","SS","LF","CF","RF","DH","P"]
+        return self._Positions.get(position)
+    
     def setLineup(self): #critical, as this is the only function called in the initializer
+        # important - have 
         gameDict = PlayerCardCreator.doTheThing() # dictionary of possible cards
         
         # for temporary debugging purposes
@@ -89,8 +98,8 @@ class Lineup(list):
             except KeyError:
                 print("You've entered a player who is not in the list of valid players.  Please try again!")
                 continue # if this block hits, restart loop at current i without incrementing
-            selectedBatterPosition = input("Please select a position for this player. ")
-            selectedBatterPosition = selectedBatterPosition.upper() # prevents unwarranted errors
+            selectedBatterPosition = input("Please select a position for this player. ").upper()
+            
             # the below two segments work individually, but should be done at once in order to avoid removing the position from the availablePositions list or placing the batter in the lineup unless both conditions are satisfied
             
             #TODO: make this into its own "assign position" function, as this will have to be redone when making subs
@@ -119,6 +128,7 @@ class Lineup(list):
             i += 1
             '''
         self._BattingOrder = theLineup
+        self._Positions = {}
     
     #__INITIALIZER__
     # I belive doing as such solves the problem of how to always check that the lineup has exactly one player playing each position and ability to understand who is playing where (ie to calculate fielding as needed)

@@ -42,6 +42,7 @@ pitcherTypeRegex = re.compile(r'Starter|Reliever|Closer')
 deckOfCards = {} # dictionary
 # listOfCards = []
 
+
 for player in playerList:
     thisPlayerRegex = playerOutputsRegex.findall(player)
     pitcherType = pitcherTypeRegex.findall(player)
