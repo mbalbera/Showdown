@@ -12,6 +12,8 @@ One starting pitcher is designated as the active starting pitcher using a boolea
 """
 
 import PlayerCard
+import pyperclip
+import PlayerCardCreator
 
 # A lineup is a list of 9 batters who each are assigned one position.
 # Batting order is stored as a string of PlayerCards
@@ -21,7 +23,7 @@ class Lineup(list):
     # GETTERS AND SETTERS
     
     def getBattingOrder(self):
-        return self._BattingOrder()
+        return self._BattingOrder
     
     def getCatcherArm(self): # doesn't work as of now, still figuring out how the lineup knows who is playing where, but concept is correct
         return self.catcher.Fielding
@@ -33,27 +35,67 @@ class Lineup(list):
         return sum(self.leftfield.Fielding,self.centerfield.Fielding,self.rightfield.Fielding)
     
     def setPitcher(self,thePitcher):
-        assert isinstance(thePitcher,PitcherCard)
-        self._Pitcher = thePitcher
+        assert isinstance(thePitcher,PlayerCard.PitcherCard) or thePitcher == None
+        
+        if self._Pitcher == None:
+            self._Pitcher = thePitcher
+        else: # self.getPitcher() != None:
+            assert isinstance(thePitcher,PlayerCard.PitcherCard)
+            # remove self.getPitcher() from possible new pitchers
+            self._Pitcher = thePitcher
+        
+    def getPitcher(self):
+        return self._Pitcher
         
     def getBatter(self,spot):
-        assert isinstance(spot, integer)
+        assert isinstance(spot, int)
         assert spot >= 1
         assert spot <= 9
-        return self.getLineup()[spot]
+        return self.getBattingOrder()[spot-1] # so that batter's number in order follows 1-9 convention while call to list is indexed correctly, e.g. starting with 0
         
-    def setLineup(homeOrAway,self): #critical, as this is the only function called in the initializer
-        assert homeOrAway.upper() == "HOME" or homeOrAway.upper() == "AWAY"
-        theLineup = []
+    def setLineup(self): #critical, as this is the only function called in the initializer
+        gameDict = PlayerCardCreator.doTheThing() # dictionary of possible cards
+        
+        # for temporary debugging purposes
+        theLineup = [gameDict['Edgar Renteria2004'],gameDict['Juan Pierre2001'],gameDict['Luis Gonzalez2002'],gameDict['Mark Grace2004'],gameDict['Vinny Castilla2002'],gameDict['Eric Young2004'],gameDict['Carl Crawford2003'],gameDict['Toby Hall2003'],gameDict['Harold Baines2000']]
+        for player in theLineup:
+            # quick check
+            print (player.getName())
+        self.setPitcher(gameDict['Tom Seaver2004'])
+        # quick check
+        print (self.getPitcher().getName())
+        
+        '''theLineup = []
         availablePositions = ["C","1B","2B","3B","SS","LF","CF","RF","DH","P"] # at the moment, no pitcher is set whether or not there is a DH
         i = 1
         while i < 10:
-            selectedBatter = input() # ask "which batter would you like to place in the "+i+" spot in the lineup?"
-            selectedBatterPosition = input()
+            # First thing's first: set the pitcher.  Should happen one time and one time only.
+            if i == 1 and self.getPitcher() == None:
+                selectedPitcherName = input("Please select a starting pitcher. ").title()
+                try: selectedPitcher = gameDict[selectedPitcherName]
+                except KeyError:
+                    print("You've entered a player who is not in the list of valid players.  Please try again!")
+                    continue # if this block hits, restart loop at current i without incrementing
+                self.setPitcher(selectedPitcher)
+                pitcherBat = input("Will your pitcher be hitting today? ")
+                if pitcherBat == True or pitcherBat.upper() == "YES":
+                    availablePositions.remove("DH")
+                    print("The DH has been removed. Please remember to place this pitcher in the batting order.")
+                    #TODO: when pitcher is placed at bat, check that it is indeed this pitcher
+                    # will build this functionality later
+            # Set the batter
+            selectedBatterName = input("Please place a batter in the "+str(i)+" spot. ").title() # ask "which batter would you like to place in the "+i+" spot in the lineup?"
+            try: selectedBatter = gameDict[selectedBatterName]
+            except KeyError:
+                print("You've entered a player who is not in the list of valid players.  Please try again!")
+                continue # if this block hits, restart loop at current i without incrementing
+            selectedBatterPosition = input("Please select a position for this player. ")
+            selectedBatterPosition = selectedBatterPosition.upper() # prevents unwarranted errors
             # the below two segments work individually, but should be done at once in order to avoid removing the position from the availablePositions list or placing the batter in the lineup unless both conditions are satisfied
             
             #TODO: make this into its own "assign position" function, as this will have to be redone when making subs
-            if isinstance(selectedBatter,PlayerCard):
+
+            if isinstance(selectedBatter,PlayerCard.PlayerCard):
                 try: selectedBatter.setCurrentPosition(selectedBatterPosition) # if both the if statement and the try statement pass, assign batter to this position
                 # this may not need to assign the batter a position (to save memory) - may only need to check that he is playing there.  Leaving here for now.
                 except ValueError:
@@ -66,7 +108,7 @@ class Lineup(list):
                     continue # if this block hits, restart loop at current i without incrementing
                 # so the batter knows what position he is playing and checks to see whether this is valid
                 
-                theLineup[i] = selectedBatter # if all of the if statement and the two try statements pass, place batter in lineup                
+                theLineup.append(selectedBatter) # if all of the if statement and the two try statements pass, place batter in lineup                
                 
                 # make it so the lineup knows what position the batter is playing for the purposes of calculating fielding
                 #TODO: implement me
@@ -75,88 +117,17 @@ class Lineup(list):
                 print("The batter you've selected is not a valid PlayerCard.")
                 continue # if passed an invalid PlayerCard, restart loop at current i without incrementing
             i += 1
-            # set the pitcher
-            # add ability to deal with an extra pitcher if there is no pitcher in lineup
+            '''
         self._BattingOrder = theLineup
     
     #__INITIALIZER__
     # I belive doing as such solves the problem of how to always check that the lineup has exactly one player playing each position and ability to understand who is playing where (ie to calculate fielding as needed)
 
     def __init__(self): # initializing as empty, appending done subsequently
+        self._Pitcher = None
         self.setLineup() # this function handles lineup setting
-        # save me for later in case decide to use this initializer type. (self,batter1,batter1pos,batter2,batter2pos,batter3,batter3pos,batter4,batter4pos,batter5,batter5pos,batter6,batter6pos,batter7,batter7pos,batter8,batter8pos,batter9,batter9pos,pitcher1=none): # optional pitcher argument if DH used
-        #TODO: this initializer is extra.  replace this with a loop.
-        ''' This is a better way to select and create teams
-        This has been moved to self.setLineup()
-        
-        
-        theLineup = [] # do a home and away
-        availablePositions = ["C","1B","2B","3B","SS","LF","CF","RF","DH","P"]
-        i = 1
-        while i < 10:
-            selectedBatter = input() # ask "which batter would you like to place in the "+i+" spot in the lineup?"
-            selectedBatterPosition = input()
-            # the below two segments work individually, but should be done at once in order to avoid removing the position from the availablePositions list or placing the batter in the lineup unless both conditions are satisfied
-            
-            if isinstance(selectedBatter,PlayerCard):
-                try: # if both the if statement and the try statement pass, do both things
-                    availablePositions.remove(selectedBatterPosition) # if both the if statement and the try statement pass, remove selected position from availablePositions
-                except ValueError: # print statement on following line is self-explanatory
-                    print("You've either already placed someone in that position, or the position you've selected is invalid.  Please try again!")
-                    continue # if this block hits, restart loop at current i without incrementing
-                theLineup[i] = selectedBatter # if both the if statement and the try statement pass, place batter in lineup
-                selectedBatter.setCurrentPosition(selectedBatterPosition) # if both the if statement and the try statement pass, set batter's position
-            else:
-                print("The batter you've selected is not a valid PlayerCard.")
-                continue # if passed an invalid PlayerCard, restart loop at current i without incrementing
-            i += 1
-        '''    
-        
-        # The above loop structure is cleaner AND a better UX!  Huge win!
-        
-        '''assert isinstance (batter1, PlayerCard), 'The first batter is not a card in your deck.'
-        assert isinstance (batter2, PlayerCard)
-        assert isinstance (batter3, PlayerCard)
-        assert isinstance (batter4, PlayerCard)
-        assert isinstance (batter5, PlayerCard)
-        assert isinstance (batter6, PlayerCard)
-        assert isinstance (batter7, PlayerCard)
-        assert isinstance (batter8, PlayerCard)
-        assert isinstance (batter9, PlayerCard)''' # did this better below
-        
-        # this block might better at thoroughly checking that each batter is indeed a batter, but I think is unnecessary as the above while loop is almost as foolproof and way easier
-        '''self._BattingOrder = [batter1,batter2,batter3,batter4,batter5,batter6,batter7,batter8,batter9]
-        for eachHitter in range(0,9):
-            assert isinstance (self.getBattingOrder()[eachHitter],PlayerCard), ('The batter in position '+str(eachHitter)+'is not a card in your deck.')
-            battersPosition = self.getBattingOrder()[eachHitter].getCurrentPosition() #TODO: assign positions in lineup
-            if battersPosition == "C":
-                count_C += 1
-            elif battersPosition == "1B":
-                count_1B += 1
-            elif battersPosition == "2B":
-                count_2B += 1
-            elif battersPosition == "3B":
-                count_3B += 1
-            elif battersPosition == "SS":
-                count_SS += 1
-            elif battersPosition == "LF":
-                count_LF += 1
-            elif battersPosition == "CF":
-                count_CF += 1
-            elif battersPosition == "RF":
-                count_RF += 1
-            elif battersPosition == "P":
-                count_P_DH += 1
-                count_P += 1
-                self.setPitcher(self.getBattingOrder()[eachHitter])
-            elif battersPosition == "DH":
-                count_P_DH += 1
-            
-        
-        assert max(count_C,count_1B,count_2B,count_3B,count_SS,count_SS,count_LF,count_CF,count_RF,count_P_DH) == 1 and min(count_C,count_1B,count_2B,count_3B,count_SS,count_SS,count_LF,count_CF,count_RF,count_P_DH) == 1 # exactly one player at each position
-        '''
 
-class ShowdownTeam(object): # not strictly necessary for basic operation but will be eventually
+class ShowdownTeam: # not strictly necessary for basic operation but will be eventually
     
     # GETTERS AND SETTERS
       
