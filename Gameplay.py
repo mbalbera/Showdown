@@ -126,7 +126,7 @@ class Gameplay:
         self._ThirdBase = player
         
     def dieRoll(self):
-        return int(input())
+        return int(input("For testing purposes, input the die roll you'd like to see."))
         #return random.randint(1,20)
     
     def attemptDoublePlay(self,runner):
@@ -137,6 +137,7 @@ class Gameplay:
             arm = self.awayLineup.getInfieldArm()
         roll = self.dieRoll()
         if arm + roll > speed:
+            print("The runner has been thrown out.  Double play!")
             self.tootblan(runner)
     
     # this is the main function that handles every aspect of each play - pitch, swing, advancing runners, choosing to take extra bases, turning double plays... etc.  This is going to be a doozy.
@@ -181,17 +182,26 @@ class Gameplay:
         if atBatResult == "Out(PU)" or atBatResult == "Out(SO)":
             self.batterOut()
         elif atBatResult == "Out(GB)":
-            if self.getFirstBase != None:
-                if self.getSecondBase != None:
-                    if self.getThirdBase != None:
-                        #TODO: get out the man on third
-                        
-                        #does this code simply live in self.attemptDoublePlay()?  Possibly.
-                        whichBase = input("Which base would you like to throw to - third, second, or first? ").upper()
-                        possibleBases = ["FIRST","SECOND","THIRD","1ST","2ND","3RD","1","2","3"]
-                        while whichBase not in possibleBases:
-                            whichBase = input("Which base would you like to throw to - third, second, or first? Please select a valid option. ").upper()
-                        #TODO: self.attemptDoublePlay(whichBase)
+            if self.getOuts() == 2:
+                self.batterOut()
+            else: # self.getOuts() < 2:
+                if self.getFirstBase != None:
+                    if self.getSecondBase != None:
+                        #TODO: implement me
+                        if self.getThirdBase != None:
+                            #TODO: this could be a bit more thorough (ask which player to throw out? default to 2nd if already 1 out?)
+                            self.tootblan(self.getThirdBase()) # get the runner on third out
+                            #does this code simply live in self.attemptDoublePlay()?  Possibly.
+                            whichBase = input("Which base would you like to throw to - third, second, or first? ").upper()
+                            possibleBases = ["FIRST","SECOND","THIRD","1ST","2ND","3RD","1","2","3"]
+                            while whichBase not in possibleBases:
+                                whichBase = input("Which base would you like to throw to - third, second, or first? Please select a valid option. ").upper()
+                            if whichBase in ["FIRST","1ST","1"]:
+                                self.attemptDoublePlay(self.getFirstBase())
+                            elif whichBase in ["SECOND","2ND","2"]:
+                                self.attemptDoublePlay(self.getSecondBase())
+                            else: # third base
+                                self.attemptDoublePlay(self.getThirdBase())
             self.batterOut()
             # if "Out(GB)" and self.getFirstBase != None then self.attemptDoublePlay()
             # if "Out(GB)" and self.getFirstBase == None and self.getSecondBase or self.getThirdBase != None then self.advanceRunnersIfFastEnough()
@@ -284,9 +294,14 @@ class Gameplay:
         self.nextBatter()
         self.playerOut()
     
-    # def tootblan(self,player):
-    # pass the player who was thrown out
-    # self.playerOut()
+    def tootblan(self,player):
+        if self.getFirstBase() == player:
+            self.setFirstBase(None)
+        elif self.getSecondBase() == player:
+            self.setSecondBase(None)
+        else: # self.getThirdBase() == player
+            self.setThirdBase(None)
+        self.playerOut()
             
     def scoreRun(self,player):
         if player != None:
