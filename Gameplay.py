@@ -16,6 +16,11 @@ import ShowdownTeam
 import PlayerCard
 import pyperclip
 import PlayerCardCreator
+import logging
+
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s -  %(levelname)s-  %(message)s')
+logging.debug('Start of program')
+logging.disable(logging.CRITICAL)
 
 class Gameplay:
     # GETTERS AND SETTERS
@@ -136,12 +141,52 @@ class Gameplay:
         else:
             arm = self.awayLineup.getInfieldArm()
         roll = self.dieRoll()
+        logging.debug("The infield arm is "+str(arm)+", the dice roll is "+str(roll)+", and the runner's speed is "+str(speed)+".")
         if arm + roll > speed:
             print("The runner has been thrown out.  Double play!")
-            self.tootblan(runner)
+            self.batterOut()
+            return "Out!"
+        else:
+            self.nextBatter()
+            return "Safe!"
+    
+    def advanceOnOutfieldPlay(self):
+        #TODO: find which base to advance from
+        if self.getSecondBase() == None and self.getThirdBase == None:
+            #self.nextBatter()
+            return None
+        else: # self.getSecondBase() != None or self.getThirdBase != None):
+            advanceOrNo = None
+            while advanceOrNo not in ["YES","NO","Y","N"]:
+                advanceOrNo = input("Would you like to attempt to advance the runner? Y/N").upper()
+            if advanceOrNo in ["YES","Y"]:
+                if self.getThirdBase() != None:
+                    runner = self.getThirdBase()
+                else:
+                    runner = self.getSecondBase()
+            speed = runner.getSpeed()
+            if self.getInningTopBottom() == "TOP":
+                arm = self.homeLineup.getOutfieldArm()
+            else:
+                arm = self.awayLineup.getOutfieldArm()
+            roll = self.dieRoll()
+            logging.debug("The outfield arm is "+str(arm)+", the dice roll is "+str(roll)+", and the runner's speed is "+str(speed)+".")
+            if arm + roll > speed:
+                print("The runner has been thrown out.")
+                self.tootblan(runner)
+                #if self.getOuts() != 0:
+                #    self.nextBatter()
+                return "Out!"
+            else:
+                print("The runner advances successfully.")
+                self.scoreRun(self.getThirdBase())
+                self.setThirdBase(self.getSecondBase())
+                self.setSecondBase(None)
+                #self.nextBatter()
+                return "Safe!"
+                
     
     # this is the main function that handles every aspect of each play - pitch, swing, advancing runners, choosing to take extra bases, turning double plays... etc.  This is going to be a doozy.
-    
     def atBat(self):
         thePitcher = self.getActivePitcher()
         theBatter = self.getActiveBatter()
@@ -160,7 +205,6 @@ class Gameplay:
             OutcomesList = theBatter.getBatterOutcomes()
             ResultList = self.BatterOutcomes
         
-        # this is not working exactly correctly    
         outcomeSum = 0
         theSwing = self.dieRoll()
         print("The swing is a "+str(theSwing)+"!")
@@ -170,44 +214,104 @@ class Gameplay:
             outcomeSum += OutcomesList[loopCounter] # add the next outcome
             if outcomeSum >= theSwing: # correct result identified
                 atBatResult = ResultList[loopCounter] 
-                # or should I return here and then set the returned value to something, for the sake of separating functions?
-                # at the moment I am not, because the following (commented) tasks need to be handled before the next batter comes up.
-                # although that function doesn't actually call the next batter to the plate...
             loopCounter += 1
             
-        print ("the result is a "+atBatResult)
+        print ("The result is a "+atBatResult+"!")
         
         #atBatResult section - this is where the fun begins...
         
         if atBatResult == "Out(PU)" or atBatResult == "Out(SO)":
             self.batterOut()
-        elif atBatResult == "Out(GB)":
+        # this next one is a doozy
+        elif atBatResult == "Out(GB)": #TODO: test this
             if self.getOuts() == 2:
                 self.batterOut()
             else: # self.getOuts() < 2:
-                if self.getFirstBase != None:
-                    if self.getSecondBase != None:
-                        #TODO: implement me
-                        if self.getThirdBase != None:
-                            #TODO: this could be a bit more thorough (ask which player to throw out? default to 2nd if already 1 out?)
-                            self.tootblan(self.getThirdBase()) # get the runner on third out
-                            #does this code simply live in self.attemptDoublePlay()?  Possibly.
-                            whichBase = input("Which base would you like to throw to - third, second, or first? ").upper()
-                            possibleBases = ["FIRST","SECOND","THIRD","1ST","2ND","3RD","1","2","3"]
-                            while whichBase not in possibleBases:
-                                whichBase = input("Which base would you like to throw to - third, second, or first? Please select a valid option. ").upper()
-                            if whichBase in ["FIRST","1ST","1"]:
-                                self.attemptDoublePlay(self.getFirstBase())
-                            elif whichBase in ["SECOND","2ND","2"]:
-                                self.attemptDoublePlay(self.getSecondBase())
-                            else: # third base
-                                self.attemptDoublePlay(self.getThirdBase())
-            self.batterOut()
-            # if "Out(GB)" and self.getFirstBase != None then self.attemptDoublePlay()
-            # if "Out(GB)" and self.getFirstBase == None and self.getSecondBase or self.getThirdBase != None then self.advanceRunnersIfFastEnough()
+                if self.getFirstBase() != None and self.getSecondBase() != None and self.getThirdBase() != None:
+                    #TODO: this could be a bit more thorough (ask which player to throw out? default to 2nd if already 1 out?)
+                    self.tootblan(self.getThirdBase()) # get the runner on third out
+                    #does this code simply live in self.attemptDoublePlay()?  Possibly.
+                    whichBase = input("Which base would you like to throw to - third, second, or first? ").upper()
+                    possibleBases = ["FIRST","SECOND","THIRD","1ST","2ND","3RD","1","2","3"]
+                    while whichBase not in possibleBases:
+                        whichBase = input("Which base would you like to throw to - third, second, or first? Please select a valid option. ").upper()
+                    if whichBase in ["FIRST","1ST","1"]:
+                        safeOrOut = self.attemptDoublePlay(theBatter)
+                        self.setThirdBase(self.getSecondBase())
+                        self.setSecondBase(self.getFirstBase())
+                        if safeOrOut == 'Safe!':
+                            self.setFirstBase(theBatter)
+                        else:
+                            self.setFirstBase(None)
+                    elif whichBase in ["SECOND","2ND","2"]:
+                        safeOrOut = self.attemptDoublePlay(self.getFirstBase())
+                        self.setThirdBase(self.getSecondBase())
+                        if safeOrOut == 'Safe!':
+                            self.setSecondBase(self.getFirstBase())
+                        else:
+                            self.setSecondBase(None)
+                        self.setFirstBase(theBatter)       
+                    else: # third base
+                        safeOrOut = self.attemptDoublePlay(self.getSecondBase())
+                        
+                        if safeOrOut == 'Safe!':
+                            self.setThirdBase(self.getSecondBase())
+                        else:
+                            self.setThirdBase(None)
+                        self.setSecondBase(self.getFirstBase())
+                        self.setFirstBase(theBatter)
+                elif self.getFirstBase() != None and self.getSecondBase() != None:
+                    self.tootblan(self.getSecondBase())
+                    whichBase = input("Which base would you like to throw to - second, or first? ").upper()
+                    possibleBases = ["FIRST","SECOND","1ST","2ND","1","2"]
+                    while whichBase not in possibleBases:
+                        whichBase = input("Which base would you like to throw to - second, or first? Please select a valid option. ").upper()
+                    if whichBase in ["FIRST","1ST","1"]:
+                        safeOrOut = self.attemptDoublePlay(theBatter)
+                        self.setSecondBase(self.getFirstBase())
+                        if safeOrOut == 'Safe!':
+                            self.setFirstBase(theBatter)
+                        else:
+                            self.setFirstBase(None)
+                    else: # second base
+                        safeOrOut = self.attemptDoublePlay(self.getFirstBase())
+                        if safeOrOut == 'Safe!':
+                            self.setSecondBase(self.getFirstBase())
+                        else:
+                            self.setSecondBase(None)
+                        self.setFirstBase(theBatter)
+                elif self.getFirstBase() != None:
+                    self.tootblan(self.getFirstBase())
+                    safeOrOut = self.attemptDoublePlay(theBatter)
+                    if safeOrOut == 'Safe!':
+                        self.setFirstBase(theBatter)
+                    else:
+                        self.setFirstBase(None)
+                else: # no double play potential, advance runners if fast enough
+                    if self.getSecondBase() != None and self.getThirdBase() == None and self.getSecondBase().getSpeed() >= 12:
+                        self.batterOut()
+                        self.setThirdBase(self.getSecondBase())
+                    elif self.getSecondBase() != None and self.getThirdBase() == None and self.getSecondBase().getSpeed() < 12:
+                        self.batterOut()
+                    if self.getThirdBase() != None and self.getThirdBase().getSpeed() >= 12: # give option to hold the runner
+                        throwOrNo = input("Would you like to prevent a run by throwing home, at the expense of getting the batter out? (Y/N)").upper()
+                        if throwOrNo in ["Y","YES"]:
+                            self.setFirstBase(theBatter)
+                        else:
+                            self.batterOut()
+                            self.scoreRun(self.getThirdBase())
+                            self.setThirdBase(None)
+                            if self.getSecondBase() != None and self.getSecondBase().getSpeed() >= 12:
+                                self.setThirdBase(self.getSecondBase())
+                                self.setSecondBase(None)
+                    elif self.getThirdBase() != None and self.getThirdBase().getSpeed() < 12:
+                        self.batterOut()
+                    else: # no runners
+                        self.batterOut()
         elif atBatResult == "Out(FB)":
             self.batterOut()
-            # if "Out(FB)" and (self.getSecondBase != None or self.getThirdBase() != None) then self.attemptTagUp(), first line of which is input("Do you want to attempt to tag up [from 2nd/3rd]?")
+            if self.getSecondBase() != None or self.getThirdBase() != None:
+                self.advanceOnOutfieldPlay()
         elif atBatResult == "BB":
             self.scoreRun(self.getThirdBase())
             self.setThirdBase(self.getSecondBase())
@@ -220,15 +324,21 @@ class Gameplay:
             self.setSecondBase(self.getFirstBase())
             self.setFirstBase(theBatter)
             self.nextBatter()
+            if self.getSecondBase() != None or self.getThirdBase() != None:
+                self.advanceOnOutfieldPlay()
         elif atBatResult == "single_plus": # if second base is empty after runners have advanced, advance the original batter to second base
             self.scoreRun(self.getThirdBase())
             self.setThirdBase(self.getSecondBase())
             self.setSecondBase(self.getFirstBase())
+            self.nextBatter()
             if self.getSecondBase() == None:
                 self.setSecondBase(theBatter)
+                if self.getThirdBase() != None:
+                    self.advanceOnOutfieldPlay()
             else:
                 self.setFirstBase(theBatter)
-            self.nextBatter()
+                if self.getSecondBase() != None or self.getThirdBase() != None:
+                    self.advanceOnOutfieldPlay()
         elif atBatResult == "double":
             self.scoreRun(self.getThirdBase())
             self.scoreRun(self.getSecondBase())
@@ -236,6 +346,10 @@ class Gameplay:
             self.setSecondBase(theBatter)
             self.setFirstBase(None)
             self.nextBatter()
+            if self.getThirdBase() != None:
+                    self.advanceOnOutfieldPlay()
+            else:
+                self.nextBatter()
         # if "single","single_plus","double" then self.attemptTagUp() and (self.getSecondBase != None or self.getThirdBase() != None), as per above
         elif atBatResult == "triple":
             self.scoreRun(self.getThirdBase())
@@ -256,8 +370,6 @@ class Gameplay:
             self.nextBatter()
         
         # on to the next batter, once every possible outcome is calculated!
-        # if not (self.getFirstBase() == None and self.getSecondBase() == None and self.getThirdBase() == None and self.getOuts() == 0):
-        #    self.nextBatter()
     
     def incrementInning(self): 
         #possibly: check here if game should end
@@ -271,7 +383,7 @@ class Gameplay:
         self.setSecondBase(None)
         self.setThirdBase(None)
         
-    def nextBatter(self): # ALERT: this one may be getting called once too many, or at the wrong time
+    def nextBatter(self):
         if self.getInningTopBottom() == "TOP":
             if self.awayBatterNumber == 9:
                 self.awayBatterNumber = 1
@@ -305,11 +417,13 @@ class Gameplay:
             
     def scoreRun(self,player):
         if player != None:
+            logging.debug("The pitcher has previously allowed this many runs: "+str(self.getActivePitcher().getRunsAllowed()))
+            self.getActivePitcher().setRunsAllowed(1)
+            logging.debug("The pitcher has now allowed this many runs: "+str(self.getActivePitcher().getRunsAllowed()))
             if self.getInningTopBottom() == "TOP":
                 self.setAwayScore(self.getAwayScore()+1)
             else:
                 self.setHomeScore(self.getHomeScore()+1)
-        
     
     # __INITIALIZER__
     def __init__(self):#,HomeTeam,AwayTeam): #saved for later
@@ -351,20 +465,36 @@ class Gameplay:
             print ("O: "+str(self.getOuts()*"x"))
             if self.getFirstBase() == None:
                 print ("1B:")
-            else: print ("1B: "+self.getFirstBase().getLastName())
+            else: print ("1B: "+self.getFirstBase().getLastName()+" ("+str(self.getFirstBase().getSpeed())+")")
             if self.getSecondBase() == None:
                 print ("2B:")
-            else: print ("2B: "+self.getSecondBase().getLastName())
+            else: print ("2B: "+self.getSecondBase().getLastName()+" ("+str(self.getSecondBase().getSpeed())+")")
             if self.getThirdBase() == None:
                 print ("3B:")
-            else: print ("3B: "+self.getThirdBase().getLastName())
-            # pitcher options
+            else: print ("3B: "+self.getThirdBase().getLastName()+" ("+str(self.getThirdBase().getSpeed())+")")
+            
+            # pitcher options - disabled for now for quicker debugging
             pQuestion = None
             while (pQuestion != 'pitch' and pQuestion != 'change pitchers'):
-                print (pQuestion)
                 pQuestion = input("What do you want to do - 'pitch' or 'change pitchers'? ").lower()
-                # if pQuestion == 'change pitchers':
-                  # self.pitchingChange(newPitcher, team)
+                while pQuestion == 'change pitchers':
+                    newPitcherName = input("Which pitcher would you like to sub in? ")
+                    try:
+                        if self.getInningTopBottom() == "TOP":
+                            logging.info("Top of inning, checking")
+                            logging.info(self.homeLineup.getAvailablePlayers()[newPitcherName].getName()+" is the name of the new pitcher")
+                            #print(self.getHomeTeam().getAvailablePlayers()[newPitcherName].getName()+" is the name of the new pitcher")
+                            # temporary fix in here - eventually replace self.homelineup with self.getHomeTeam (same below for Away)
+                            self.homeLineup.pitchingChange(self.getActivePitcher(),self.homeLineup.getAvailablePlayers()[newPitcherName])
+                        else:
+                            logging.info("Bottom of inning, checking")
+                            logging.info(self.awayLineup.getAvailablePlayers()[newPitcherName].getName()+" is the name of the new pitcher")
+                            #print(self.awaylineup.getAvailablePlayers()[newPitcherName].getName()+" is the name of the new pitcher")
+                            self.awayLineup.pitchingChange(self.getActivePitcher(),self.awayLineup.getAvailablePlayers()[newPitcherName])
+                    except KeyError:
+                        print ("You've entered an invalid pitcher.")
+                    pQuestion = input("What do you want to do - 'pitch' or 'change pitchers'? ").lower()
+                
             
             # batter options - similar to pitchers', above
             '''if self.getFirstBase() != None:
@@ -374,6 +504,11 @@ class Gameplay:
                 self.stealBase(self.getThirdBase(),'third')
             '''
             # call atBat() to handle the pitch, swing, outcome, and all associated changes, including inning increment, and finally bring up the next batter
+            logging.debug("The pitcher's control is "+str(self.getActivePitcher().getControl()))
+            logging.debug("The control reduction factor is "+str(min(0,self.getActivePitcher().getIP()-self.getActivePitcher().getInningsPitched()-1-self.getActivePitcher().getRunsAllowed()/3)))
+            logging.debug("The IP factor is "+str(self.getActivePitcher().getIP()-self.getActivePitcher().getInningsPitched()-1))
+            logging.debug("The runs allowed factor is "+str(int(-self.getActivePitcher().getRunsAllowed()/3)))
+            logging.debug("The pitcher has allowed this many runs: "+str(-self.getActivePitcher().getRunsAllowed()))
             self.atBat()
 
             #end game turn activeGame = FALSE when...

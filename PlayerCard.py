@@ -13,7 +13,7 @@ class PlayerCard: # nothing should ever be of class PlayerCard, & all cards shou
     def getPointValue(self):
         return self._PointValue
     
-    def getPosition1(self):
+    def getPosition1(self): 
         return self._Position1
     
     def getPosition2(self):
@@ -42,11 +42,17 @@ class PlayerCard: # nothing should ever be of class PlayerCard, & all cards shou
     def getLastName(self):
         return self._nameLast
     
+    def takeOutOfGame(self):
+        self._canPlay = False
+        
+    def isAvailableToPlay(self):
+        return self._canPlay
+    
 class PitcherCard(PlayerCard):
     # GETTERS AND SETTERS
 
     def getControl(self):
-        return self._Control
+        return int(self._Control+min(0,int(self.getIP()-self.getInningsPitched()-1)-int(self.getRunsAllowed()/3)))
     
     def getPitcherOutcomes(self):
         return self._PitcherOutcomes
@@ -59,6 +65,12 @@ class PitcherCard(PlayerCard):
     
     def setInningsPitched(self,numberOutsRecorded):
         self._outsRecorded = numberOutsRecorded
+        
+    def getRunsAllowed(self):
+        return self._runsAllowed
+    
+    def setRunsAllowed(self,number):
+        self._runsAllowed += number
     
     #__INITIALIZER__
     # Awards to be added later
@@ -90,6 +102,8 @@ class PitcherCard(PlayerCard):
         self._IP = IP
         self._Speed = 10
         self._outsRecorded = 0
+        self._runsAllowed = 0
+        self._canPlay = True
         
         self._PitcherOutcomes = (OutPU,OutSO,OutGB,OutFB,BB,single,double,homerun)
         
@@ -103,13 +117,35 @@ class BatterCard(PlayerCard):
     def getBatterOutcomes(self):
         return self._BatterOutcomes
     
-    def getFielding(self):
-        if self.getCurrentPosition() == self.getPosition1():
+    def checkPosition(self,currentPos,playersPos): # to account for cases where currentPosition is not exactly equal to but means Position (e.g. LF/RF == LF)
+        # output is of type bool
+        if currentPos == "C":
+            return playersPos == "C"
+        elif currentPos == "1B":
+            return playersPos in ["1B","IF","1B/3B",] # not yet accounting for "anyone can play 1B" factor
+        elif currentPos == "2B":
+            return playersPos in ["2B","2B/SS","2B/3B","IF"]
+        elif currentPos == "3B":
+            return playersPos in ["3B","IF","2B/3B","1B/3B",]
+        elif currentPos == "SS":
+            return playersPos in ["SS","2B/SS","IF"] # although this is a common set of positions people play, there is no "3B/SS" because their fielding almost always is materially different enough for these to be set as _Position1 and _Position2.  Could maybe add later if there is a use case.
+        elif currentPos == "LF":
+            return playersPos in ["LF","LF/RF","LFRF","OF"]
+        elif currentPos == "CF":
+            return playersPos in ["CF","OF"]
+        elif currentPos == "RF":
+            return playersPos in ["RF","LF/RF","LFRF","OF"]
+        elif currentPos == "P":
+            return playersPos in ["SP","RP","CP"]
+        else: # currentPos == DH
+            return True
+    
+    def getFielding(self): # must account for cases where currentPosition is not exactly equal to but means Position (e.g. LF/RF == LF)
+        if self.checkPosition(self.getCurrentPosition(),self.getPosition1()):
             return self._Fielding1
-        else: #self.getCurrentPosition() == self.getPosition2(), I hope!
+        else: #self.checkPosition(self.getCurrentPosition(),self.getPosition2(), I hope! If not, I deserve an error here.
             return self._Fielding2
         # prepared a bit for the eventuality that this function will increase in complexity to account for players playing multiple positions
-        # will have to handle (for ex): 2B/SS playing SS, OF playing CF or LF, IF playing 1B or SS, anyone playing 1B @ fielding = -1
     
     #__INITIALIZER__
     # Awards to be added later
@@ -119,10 +155,12 @@ class BatterCard(PlayerCard):
         assert isinstance(nameFirst, str)
         assert isinstance(nameLast, str)
         # the below line currently allows Position to be only 'LF', which I'll accept for now to mean LF/RF.
-        assert Position1 == "C" or Position1 == "1B" or Position1 == "2B" or Position1 == "3B" or Position1 == "SS" or Position1 == "LF/RF" or Position1 == "CF" or Position1 == "OF" or Position1 == "IF" or Position1 == "2B/SS" or Position1 == "2B/3B" or Position1 == "-" or Position1 == "LFRF" or Position1 == "DH" or Position1 == "LF", "Position1 was passed "+str(Position1)+", which caused a fail."
+        assert Position1 == "C" or Position1 == "1B" or Position1 == "2B" or Position1 == "3B" or Position1 == "SS" or Position1 == "LF/RF" or Position1 == "CF" or Position1 == "OF" or Position1 == "IF" or Position1 == "2B/SS" or Position1 == "2B/3B" or Position1 == "-" or Position1 == "LFRF" or Position1 == "DH" or Position1 == "LF" or Position1 == "RF", "Position1 was passed "+str(Position1)+", which caused a fail."
         assert isinstance(Fielding1, int)
         assert Fielding1 >= -1
         assert Fielding1 <= 12
+        #assert Fielding2 >= -1 # will be needed eventually
+        #assert Fielding2 <= 12 # will be needed eventually
         assert isinstance(Speed,int)
         assert Speed >= 8
         assert Speed <= 28
@@ -140,8 +178,11 @@ class BatterCard(PlayerCard):
         self._PointValue = PointValue
         self._Position1 = Position1
         self._Fielding1 = Fielding1
+        self._Position2 = None # will be needed later
+        self._Fielding2 = None # will be needed later
         self._OnBase = OnBase
         self._Speed = Speed
+        self._canPlay = True
         
         self._BatterOutcomes = (OutSO,OutGB,OutFB,BB,single,single_plus,double,triple,homerun)
         
