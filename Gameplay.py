@@ -373,15 +373,25 @@ class Gameplay:
     
     def incrementInning(self): 
         #possibly: check here if game should end
-        if self.getInningTopBottom() == "BOTTOM":
-            self.setInningNumber(self.getInningNumber()+1)
-            self.setInningTopBottom("TOP")
-        else:
-            self.setInningTopBottom("BOTTOM")
-        self.setOuts(0)
-        self.setFirstBase(None)
-        self.setSecondBase(None)
-        self.setThirdBase(None)
+        if self.getInningNumber() >= self.numberInnings:
+            if self.getInningTopBottom() == "TOP" and self.getHomeScore() > self.getAwayScore():
+                self.activeGame = False
+                print ("The home team defeated the away team by a score of "+str(self.getHomeScore())+" to "+str(self.getAwayScore())+" in "+str(self.getInningNumber())+" innings.")
+            elif self.getInningTopBottom() == "BOTTOM" and self.getHomeScore() < self.getAwayScore():
+                self.activeGame = False
+                print ("The away team defeated the home team by a score of "+str(self.getAwayScore())+" to "+str(self.getHomeScore())+" in "+str(self.getInningNumber())+" innings.")
+            else:
+                pass
+        if self.activeGame:
+            if self.getInningTopBottom() == "BOTTOM":
+                self.setInningNumber(self.getInningNumber()+1)
+                self.setInningTopBottom("TOP")
+            else:
+                self.setInningTopBottom("BOTTOM")
+            self.setOuts(0)
+            self.setFirstBase(None)
+            self.setSecondBase(None)
+            self.setThirdBase(None)
         
     def nextBatter(self):
         if self.getInningTopBottom() == "TOP":
@@ -429,12 +439,12 @@ class Gameplay:
     def __init__(self):#,HomeTeam,AwayTeam): #saved for later
         #self._HomeTeam = HomeTeam # not necessary as of now, will be in the future to ensure only full, legal teams are used
         #self._AwayTeam = AwayTeam # not necessary as of now, will be in the future to ensure only full, legal teams are used
-        numInnings = input("Please select how many innings will be played. ") # number of innings to play
-        try: self.numberInnings = int(numInnings)
-        except:
-            print("Please select a positive integer number of innings to play.")
-            numInnings = input("Please select how many innings will be played. ") # number of innings to play
-            self.numberInnings = int(numInnings)
+        self.numberInnings = 0
+        while self.numberInnings < 1 or self.numberInnings > 9:
+            try:
+                self.numberInnings = int(input("Please select how many innings will be played. ")) # set number of innings to play
+            except ValueError:
+                print("You've input something that's not a number.")
         assert isinstance (self.numberInnings, int) and self.numberInnings >= 1 # if fail here, program crashes, try again
         # homeLineup = homeTeam.getBattingOrder()
         self.homeLineup = ShowdownTeam.Lineup()
@@ -452,10 +462,9 @@ class Gameplay:
         self.setFirstBase(None)
         self.setSecondBase(None)
         self.setThirdBase(None)
-        
-        activeGame = True
+        self.activeGame = True
 
-        while activeGame:
+        while self.activeGame:
             # before the pitch
             # log active state
             print(self.getInningTopBottom()+" "+str(self.getInningNumber()))
@@ -481,14 +490,14 @@ class Gameplay:
                     newPitcherName = input("Which pitcher would you like to sub in? ")
                     try:
                         if self.getInningTopBottom() == "TOP":
-                            logging.info("Top of inning, checking")
-                            logging.info(self.homeLineup.getAvailablePlayers()[newPitcherName].getName()+" is the name of the new pitcher")
+                            logging.debug("Top of inning, checking")
+                            logging.debug(self.homeLineup.getAvailablePlayers()[newPitcherName].getName()+" is the name of the new pitcher")
                             #print(self.getHomeTeam().getAvailablePlayers()[newPitcherName].getName()+" is the name of the new pitcher")
                             # temporary fix in here - eventually replace self.homelineup with self.getHomeTeam (same below for Away)
                             self.homeLineup.pitchingChange(self.getActivePitcher(),self.homeLineup.getAvailablePlayers()[newPitcherName])
                         else:
-                            logging.info("Bottom of inning, checking")
-                            logging.info(self.awayLineup.getAvailablePlayers()[newPitcherName].getName()+" is the name of the new pitcher")
+                            logging.debug("Bottom of inning, checking")
+                            logging.debug(self.awayLineup.getAvailablePlayers()[newPitcherName].getName()+" is the name of the new pitcher")
                             #print(self.awaylineup.getAvailablePlayers()[newPitcherName].getName()+" is the name of the new pitcher")
                             self.awayLineup.pitchingChange(self.getActivePitcher(),self.awayLineup.getAvailablePlayers()[newPitcherName])
                     except KeyError:
@@ -511,19 +520,22 @@ class Gameplay:
             logging.debug("The pitcher has allowed this many runs: "+str(-self.getActivePitcher().getRunsAllowed()))
             self.atBat()
 
-            #end game turn activeGame = FALSE when...
+            # check for walkoff win - any end of inning checks happen in incrementInning(self)
             # home team wins
-            if self.getInningNumber() >= self.numberInnings and self.getOuts() == 3 and self.getInningTopBottom() == "TOP" and self.getHomeScore() > self.getAwayScore():
-                activeGame = FALSE
-                return ("The home team defeated the away team by a score of "+str(self.getHomeScore())+" to "+str(self.getAwayScore())+" in "+str(self.inning)+" innings.")
+            logging.info("We are in the "+self.getInningTopBottom()+" of the "+str(self.getInningNumber())+" inning out of a total of "+str(self.numberInnings)+".")
+            logging.info("There are "+str(self.getOuts())+" outs.")
+            logging.info("The score is "+str(self.getAwayScore())+" - "+str(self.getHomeScore())+".")
+            if (self.getInningNumber() >= self.numberInnings and self.getInningTopBottom() == "BOTTOM" and self.getHomeScore() > self.getAwayScore()):
+                self.activeGame = False
+                print ("The home team defeated the away team by a score of "+str(self.getHomeScore())+" to "+str(self.getAwayScore())+" via a walk-off in inning "+str(self.getInningNumber())+".")
+            
             # away team wins
             # self.getOuts() == 3 isn't hitting here
-            if self.getInningNumber() >= self.numberInnings and self.getOuts() == 3 and self.getInningTopBottom() == "BOTTOM" and self.getHomeScore() < self.getAwayScore():
-                activeGame = FALSE                
+            '''if (self.getInningNumber() >= self.numberInnings and self.getOuts() == 3 and self.getInningTopBottom() == "BOTTOM" and self.getHomeScore() < self.getAwayScore()):
+                self.activeGame = False                
                 return ("The away team defeated the home team by a score of "+str(self.getAwayScore())+" to "+str(self.getHomeScore())+" in "+str(self.inning)+" innings.")
-
-# temporary fix to make sure there is a list of cards
-# gameDict = PlayerCardCreator.doTheThing()
+            '''
+        print ("Game over!")
     
 newGame = Gameplay()
 ''' start! This calls the initializer.  What should happen now:

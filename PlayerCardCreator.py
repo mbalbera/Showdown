@@ -5,6 +5,7 @@ into player cards of type PlayerCard in my user-defined module.'''
 import PlayerCard
 import pyperclip
 import re
+import time
 
 # CRITICAL: copy the text BEFORE running this module.  Otherwise, it'll do nothing.
 
@@ -29,6 +30,10 @@ playersRegex = re.compile(r'\(.*\)') # find everything between parentheses
 
 # Get text off clipboard
 playerList = playersRegex.findall(pyperclip.paste()) # this will store in playerList a list of strings, in which each individual string is a player card in the original format
+
+# TODO: working on a way to add players with more control than a simple card dump
+#playerList = playersRegex.findall(input("Please paste in a string that includes all of the cards you would like to use. "))
+# time.sleep(1.5)
 
 # now all we need to do is turn those into PlayerCard format cards!
 
