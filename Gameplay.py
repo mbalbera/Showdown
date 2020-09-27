@@ -313,9 +313,12 @@ class Gameplay:
             if self.getSecondBase() != None or self.getThirdBase() != None:
                 self.advanceOnOutfieldPlay()
         elif atBatResult == "BB":
-            self.scoreRun(self.getThirdBase())
-            self.setThirdBase(self.getSecondBase())
-            self.setSecondBase(self.getFirstBase())
+            if self.getFirstBase() != None and self.getSecondBase() != None and self.getThirdBase() != None:
+                self.scoreRun(self.getThirdBase())
+            if self.getFirstBase() != None and self.getSecondBase() != None:
+                self.setThirdBase(self.getSecondBase())
+            if self.getFirstBase() != None:
+                self.setSecondBase(self.getFirstBase())
             self.setFirstBase(theBatter)
             self.nextBatter()
         elif atBatResult == "single":
