@@ -164,26 +164,26 @@ class Gameplay:
                     runner = self.getThirdBase()
                 else:
                     runner = self.getSecondBase()
-            speed = runner.getSpeed()
-            if self.getInningTopBottom() == "TOP":
-                arm = self.homeLineup.getOutfieldArm()
-            else:
-                arm = self.awayLineup.getOutfieldArm()
-            roll = self.dieRoll()
-            logging.debug("The outfield arm is "+str(arm)+", the dice roll is "+str(roll)+", and the runner's speed is "+str(speed)+".")
-            if arm + roll > speed:
-                print("The runner has been thrown out.")
-                self.tootblan(runner)
-                #if self.getOuts() != 0:
-                #    self.nextBatter()
-                return "Out!"
-            else:
-                print("The runner advances successfully.")
-                self.scoreRun(self.getThirdBase())
-                self.setThirdBase(self.getSecondBase())
-                self.setSecondBase(None)
-                #self.nextBatter()
-                return "Safe!"
+                speed = runner.getSpeed()
+                if self.getInningTopBottom() == "TOP":
+                    arm = self.homeLineup.getOutfieldArm()
+                else:
+                    arm = self.awayLineup.getOutfieldArm()
+                roll = self.dieRoll()
+                logging.debug("The outfield arm is "+str(arm)+", the dice roll is "+str(roll)+", and the runner's speed is "+str(speed)+".")
+                if arm + roll > speed:
+                    print("The runner has been thrown out.")
+                    self.tootblan(runner)
+                    #if self.getOuts() != 0:
+                    #    self.nextBatter()
+                    return "Out!"
+                else:
+                    print("The runner advances successfully.")
+                    self.scoreRun(self.getThirdBase())
+                    self.setThirdBase(self.getSecondBase())
+                    self.setSecondBase(None)
+                    #self.nextBatter()
+                    return "Safe!"
                 
     
     # this is the main function that handles every aspect of each play - pitch, swing, advancing runners, choosing to take extra bases, turning double plays... etc.  This is going to be a doozy.
@@ -226,7 +226,7 @@ class Gameplay:
         elif atBatResult == "Out(GB)": #TODO: test this
             if self.getOuts() == 2:
                 self.batterOut()
-            else: # self.getOuts() < 2:
+            else: # self.getOuts() < 2: # attempt double play
                 if self.getFirstBase() != None and self.getSecondBase() != None and self.getThirdBase() != None:
                     #TODO: this could be a bit more thorough (ask which player to throw out? default to 2nd if already 1 out?)
                     self.tootblan(self.getThirdBase()) # get the runner on third out
