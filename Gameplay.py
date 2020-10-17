@@ -171,18 +171,22 @@ class Gameplay:
                     arm = self.awayLineup.getOutfieldArm()
                 roll = self.dieRoll()
                 logging.debug("The outfield arm is "+str(arm)+", the dice roll is "+str(roll)+", and the runner's speed is "+str(speed)+".")
+                # the below two options are workable but flawed
                 if arm + roll > speed:
+                    # this is a little too simplististic right now
+                    # for ex: if it is 1st & 2nd, the batter hits a single, and the runner is thrown out at home
+                    # the runner who went to 2nd doesn't advance to 3rd
+                    # move call to this function between advancing runners and putting the hitter on base?
                     print("The runner has been thrown out.")
                     self.tootblan(runner)
-                    #if self.getOuts() != 0:
-                    #    self.nextBatter()
                     return "Out!"
                 else:
+                    # this is a little too simplististic right now
+                    # for ex: if a runner scores from 1st on a double, the original batter ends up at 3rd
                     print("The runner advances successfully.")
                     self.scoreRun(self.getThirdBase())
                     self.setThirdBase(self.getSecondBase())
                     self.setSecondBase(None)
-                    #self.nextBatter()
                     return "Safe!"
                 
     
